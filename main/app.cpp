@@ -18,13 +18,16 @@ void App::init_uart()
     uart_param_config(UART_NUM_0, &uart_config);
     uart_set_pin(UART_NUM_0, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
 
-    esp_log_set_vprintf(nullptr);
+    
 
     xTaskCreatePinnedToCore([](void*arg){
         App*app = (App*)arg;
         app->uart_receive_task();
         vTaskDelete(NULL);
     }, "audio", 4096 * 6, this, 8, nullptr, 0);
+
+
+    // esp_log_set_vprintf(nullptr);
 }
 
 // CRC8 校验函数
@@ -126,7 +129,7 @@ void App::uart_receive_task() {
 void App::print_all_tasks(){
     char task_list_buffer[1024];//缓冲区大小建议>=512字节
     vTaskList(task_list_buffer);//获取任务信息
-    printf("Task List:\n%s\n",task_list_buffer);
+    // printf("Task List:\n%s\n",task_list_buffer);
 }
 
 App::App(/* args */)
@@ -392,8 +395,48 @@ void App::run()
                 uart_write_bytes(UART_NUM_0, pcm_bytes, data_len);
 
                 // 发送 CRC
-                // uart_write_bytes(UART_NUM_0, &crc, sizeof(crc));
+                uart_write_bytes(UART_NUM_0, &crc, sizeof(crc));
             }
+
+            // // 计算总数据长度（字节数）
+            // size_t total_bytes = 0;
+            // for (const auto& packet : pcm_packets_) {
+            //     total_bytes += packet.size() * sizeof(int16_t);
+            // }
+
+            // // 构建数据帧
+            // uint8_t header[4];
+            // header[0] = 0xAA;
+            // header[1] = 0x55;
+            // header[2] = (total_bytes >> 8) & 0xFF;  // 长度高字节
+            // header[3] = total_bytes & 0xFF;        // 长度低字节
+
+            // // 创建连续缓冲区存放所有PCM数据
+            // std::vector<uint8_t> combined_data;
+            // combined_data.reserve(total_bytes);  // 预分配空间提高效率
+
+            // // 将所有包的数据复制到连续缓冲区
+            // for (const auto& packet : pcm_packets_) {
+            //     const uint8_t* packet_bytes = reinterpret_cast<const uint8_t*>(packet.data());
+            //     size_t packet_size = packet.size() * sizeof(int16_t);
+            //     combined_data.insert(combined_data.end(), packet_bytes, packet_bytes + packet_size);
+            // }
+
+            // // 获取连续数据的指针
+            // uint8_t* pcm_bytes = combined_data.data();
+
+            // // 计算CRC（对整个拼接后的数据）
+            // uint8_t crc = crc8(pcm_bytes, total_bytes);
+
+            // // 发送帧头
+            // uart_write_bytes(UART_NUM_0, header, sizeof(header));
+
+            // // 发送PCM数据
+            // uart_write_bytes(UART_NUM_0, pcm_bytes, total_bytes);
+
+            // // 发送CRC
+            // uart_write_bytes(UART_NUM_0, &crc, sizeof(crc));
+
             pcm_packets_.clear();       
         });
     });
