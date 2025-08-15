@@ -1,0 +1,11 @@
+menu "Board selection"
+
+    choice BOARD_TYPE
+        prompt  "Board Type"
+        default BOARD_TYPE_VOICE_DEV
+        config BOARD_TYPE_VOICE_DEV
+            bool "ESP32 S3N16R8"
+    endchoice
+    
+endmenu
+
